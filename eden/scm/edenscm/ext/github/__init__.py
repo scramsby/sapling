@@ -66,7 +66,7 @@ def submit_cmd(ui, repo, *args, **opts):
     _("[-r REV] PULL_REQUEST"),
 )
 def link_cmd(ui, repo, *args, **opts):
-    """indentify a commit as the head of a GitHub pull request
+    """identify a commit as the head of a GitHub pull request
 
     A PULL_REQUEST can be specified in a number of formats:
 
@@ -112,10 +112,7 @@ def follow_cmd(ui, repo, *revs, **opts):
 
 @templatekeyword("github_repo")
 def github_repo(repo, ctx, templ, **args) -> bool:
-    try:
-        return github_repo_util.check_github_repo(repo) is not None
-    except Exception:
-        return False
+    return github_repo_util.is_github_repo(repo)
 
 
 def _get_pull_request_field(field_name: str, repo, ctx, **args):
@@ -156,6 +153,16 @@ def github_pull_request_title(repo, ctx, templ, **args) -> Optional[str]:
 @templatekeyword("github_pull_request_body")
 def github_pull_request_body(repo, ctx, templ, **args) -> Optional[str]:
     return _get_pull_request_field("body", repo, ctx, **args)
+
+
+@templatekeyword("github_pull_request_status_check_rollup")
+def github_pull_request_status_check_rollup(repo, ctx, templ, **args) -> Optional[str]:
+    pull_request = templates.get_pull_request_data_for_rev(repo, ctx, **args)
+    try:
+        commit = pull_request["commits"]["nodes"][0]["commit"]
+        return commit["statusCheckRollup"]["state"]
+    except Exception:
+        return None
 
 
 @templatekeyword("github_pull_request_url")

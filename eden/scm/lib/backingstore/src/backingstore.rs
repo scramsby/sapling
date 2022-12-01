@@ -37,7 +37,7 @@ pub struct BackingStore {
 }
 
 impl BackingStore {
-    pub fn new<P: AsRef<Path>>(root: P, aux_data: bool, allow_retries: bool) -> Result<Self> {
+    pub fn new<P: AsRef<Path>>(root: P, allow_retries: bool) -> Result<Self> {
         let root = root.as_ref();
         let mut config = configparser::hg::load(Some(root), &[], &[])?;
 
@@ -54,14 +54,9 @@ impl BackingStore {
 
         let mut filestore = FileStoreBuilder::new(&config)
             .local_path(&store_path)
-            .override_edenapi(true);
-
-        if aux_data {
-            filestore = filestore.store_aux_data();
-        }
+            .store_aux_data();
 
         let treestore = TreeStoreBuilder::new(&config)
-            .override_edenapi(true)
             .local_path(&store_path)
             .suffix(Path::new("manifests"));
 
@@ -222,7 +217,7 @@ impl BackingStore {
         } else {
             self.treestore.as_ref()
         }
-        .fetch_batch(std::iter::once(key))?;
+        .fetch_batch(std::iter::once(key));
 
         if let Some(mut entry) = fetch_results.single()? {
             Ok(Some(entry.manifest_tree_entry()?.try_into()?))
@@ -267,26 +262,6 @@ impl BackingStore {
             self.treestore.as_ref()
         }
         .fetch_batch(indexes.keys().cloned());
-
-        // Handle batch failure
-        let fetch_results = match fetch_results {
-            Ok(res) => res,
-            Err(e) => {
-                let mut indexes = indexes.values();
-                // Pass along the error to the first index
-                if let Some(index) = indexes.next() {
-                    resolve(*index, Err(e))
-                }
-                // Return a generic error for others (errors are not Clone)
-                for index in indexes {
-                    resolve(
-                        *index,
-                        Err(anyhow!("get_tree_batch failed across the entire batch")),
-                    )
-                }
-                return;
-            }
-        };
 
         // Handle pey-key fetch results
         for result in fetch_results {

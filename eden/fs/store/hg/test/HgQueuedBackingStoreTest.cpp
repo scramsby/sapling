@@ -28,14 +28,13 @@ const auto kTestTimeout = 10s;
 
 struct TestRepo {
   folly::test::TemporaryDirectory testDir{"eden_queued_hg_backing_store_test"};
-  AbsolutePath testPath{testDir.path().string()};
+  AbsolutePath testPath = canonicalPath(testDir.path().string());
   HgRepo repo{testPath + "repo"_pc};
   RootId commit1;
   Hash20 manifest1;
 
   TestRepo() {
-    repo.hgInit();
-    repo.enableTreeManifest(testPath + "cache"_pc);
+    repo.hgInit(testPath + "cache"_pc);
 
     repo.mkdir("foo");
     repo.writeFile("foo/bar.txt", "bar\n");
