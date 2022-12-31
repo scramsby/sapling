@@ -6,11 +6,10 @@
 """utilities for interacting with GitHub (EXPERIMENTAL)
 """
 
-import os
 import shutil
 from typing import Optional
 
-from edenscm import error, registrar
+from edenscm import error, registrar, util
 from edenscm.i18n import _
 
 from . import (
@@ -222,7 +221,9 @@ def list_cmd(ui, repo, *args, **opts):
             else:
                 raise ValueError(f"unsupported type {val_type} for {value}")
 
-    os.execv(argv0, gh_args)
+    # Once chg supports an execv-style API, call it with `argv0` and `gh_args`.
+    cmd = " ".join([util.shellquote(arg) for arg in gh_args])
+    ui.system(cmd)
 
 
 def _find_gh_cli() -> Optional[str]:
